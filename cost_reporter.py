@@ -17,16 +17,16 @@ FLT2 = '[{{"Field": "productFamily", "Value": "Storage", "Type": "TERM_MATCH"}},
        '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}}]'
 
 
-def get_infra(cluster, region):
+def get_infra(region: object, tag_name: object, tag_value: object) -> object:
     client = boto3.client('ec2', region_name=region)
     ec2_resource = boto3.resource('ec2', region_name=region)
-    reservations = client.describe_instances(Filters=[{'Name': 'tag:Name', 'Values': ["*" + cluster + "*"]}])
+    reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name, 'Values': ["*" + tag_value + "*"]}])
     instances = [i for l in reservations['Reservations'] for i in l['Instances']]
     # instance types of "running" machines
     types = [i['InstanceType'] for i in instances if i['State']['Code'] == 16]
     # Using Counter to count unique values
     formatted_types = Counter(types)
-    print(cluster + ' infra: ')
+    print(tag_value + ' infra: ')
     for v, c in formatted_types.items():
         print('\t{0}\t{1}'.format(c, v))
 
@@ -78,14 +78,17 @@ def aws_region(region):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r,--region", dest="region", nargs=1, type=str, required=True, help="Cluster region")
-    parser.add_argument("-c,--cluster", dest="cluster", nargs=1, type=str, required=True, help="Cluster name")
+    parser.add_argument('-r', '--region', dest='region', nargs=1, type=str, required=True, help="Region")
+    parser.add_argument('-n', '--tag_name', dest="tag_name", nargs=1, type=str, required=True, help="Tag name")
+    parser.add_argument('-v', '--tag_value', dest='tag_value', nargs=1, type=str, required=True, help="Tag value")
     args = parser.parse_args()
 
     region = args.region[0]
-    cluster = args.cluster[0]
+    tag_name = args.tag_name[0]
+    tag_value = args.tag_value[0]
     monthly = 0
-    infra = get_infra(cluster, region)
+    
+    infra = get_infra(region,tag_name,tag_value)
 
     for i in infra[0]:
         price = get_instance_price(aws_region(region), i)
