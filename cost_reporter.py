@@ -2,6 +2,8 @@ import argparse
 import boto3
 import json
 
+from itertools import groupby
+from operator import itemgetter
 
 from collections import Counter
 
@@ -11,7 +13,7 @@ FLT = '[{{"Field": "tenancy", "Value": "shared", "Type": "TERM_MATCH"}},' \
       '{{"Field": "preInstalledSw", "Value": "NA", "Type": "TERM_MATCH"}},' \
       '{{"Field": "instanceType", "Value": "{t}", "Type": "TERM_MATCH"}},' \
       '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}}]'
-#EBS filter
+# EBS filter
 FLT2 = '[{{"Field": "productFamily", "Value": "Storage", "Type": "TERM_MATCH"}},' \
        '{{"Field": "volumeType", "Value": "{e}", "Type": "TERM_MATCH"}},' \
        '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}}]'
@@ -32,15 +34,16 @@ def get_infra(region: object, tag_name: object, tag_value: object) -> object:
 
     # EBS mounts for "running" instances, currently count only "gp2"
     ebs = [y['Ebs']['VolumeId'] for i in instances if i['State']['Code'] == 16 for y in i['BlockDeviceMappings']]
-    ebs_size = [ec2_resource.Volume(id).size for id in ebs if ec2_resource.Volume(id).volume_type == 'gp2']
-    total_ebs_size = sum(ebs_size)
-    formatted_ebs_size = Counter(ebs_size)
+    # Fetching all EBS disks and summing them by type, sums is dict of 'type':size
+    ebs_disks = [(ec2_resource.Volume(id).volume_type, ec2_resource.Volume(id).size) for id in ebs]
+    first = itemgetter(0)
+    ebs_sums = {(k, sum(item[1] for item in tups_to_sum))
+                for k, tups_to_sum in groupby(sorted(ebs_disks, key=first), key=first)}
     print('SSD disks: ')
-    for v, c in formatted_ebs_size.items():
-        print('\t{0}\t{1}'.format(c, v))
-    # print("Total EBS size:\n\t{0} GB".format(total_ebs_size))
+    for k, v in ebs_sums:
+        print('\t{0: <10} {1: >5}GB'.format(k, v))
 
-    return types, total_ebs_size
+    return types,ebs_sums
 
 
 def get_instance_price(region_name, instance):
@@ -53,14 +56,20 @@ def get_instance_price(region_name, instance):
     return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
 
 
-def get_ebs_price(region_name):
+def get_ebs_price(region_name,type):
     client = boto3.client('pricing', region_name='us-east-1')
-    f2 = FLT2.format(r=region_name, e='General Purpose')
+    f2 = FLT2.format(r=region_name, e=aws_ebs_volume_types(type))
     data2 = client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f2))
     od = json.loads(data2['PriceList'][0])['terms']['OnDemand']
     id1 = list(od)[0]
     id2 = list(od[id1]['priceDimensions'])[0]
     return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
+
+def aws_ebs_volume_types(type):
+    ebs_voulme_types = {'gp2' : 'General Purpose', 'io1':'Provisioned IOPS', 'st1':'Throughput Optimized', 'sc1':'Cold',
+                        'standard':'Magnetic'}
+    return ebs_voulme_types[type]
+
 
 def aws_region(region):
     aws_regions = {'us-east-2': 'US East (Ohio)', 'us-east-1': 'US East (N. Virginia)',
@@ -86,17 +95,16 @@ if __name__ == "__main__":
     region = args.region[0]
     tag_name = args.tag_name[0]
     tag_value = args.tag_value[0]
-    monthly = 0
-    
-    infra = get_infra(region,tag_name,tag_value)
+    monthly_instances_cost = 0
+    monthly_ebs_cost = 0
+    infra = get_infra(region, tag_name, tag_value)
 
     for i in infra[0]:
-        price = get_instance_price(aws_region(region), i)
-        monthly += float(price) * 732
+        monthly_instances_cost += float(get_instance_price(aws_region(region), i)) * 732
 
-    print('Monthly costs for EC2 instances: ${0:.2f}'.format(monthly))
-    total_ebs_cost = int(infra[1]) * float(get_ebs_price(aws_region(region)))
-    print('Monthly costs for EBS: ${0}'.format(total_ebs_cost))
-    print('Total monthly cost: ${0:.2f}'.format(monthly + total_ebs_cost))
+    for type, size in infra[1]:
+        monthly_ebs_cost += int(size * float(get_ebs_price(aws_region(region),type)))
 
-
+    print('Monthly costs for EC2 instances: ${0:.2f}'.format(monthly_instances_cost))
+    print('Monthly costs for EBS: ${0}'.format(monthly_ebs_cost))
+    print('Total monthly cost: ${0:.2f}'.format(monthly_instances_cost + monthly_ebs_cost))
