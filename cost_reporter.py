@@ -1,4 +1,3 @@
-
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
@@ -7,6 +6,7 @@ import boto3
 import json
 import sys
 
+from botocore.exceptions import ClientError
 from collections import Counter
 from itertools import groupby
 from operator import itemgetter
@@ -26,7 +26,14 @@ FLT2 = '[{{"Field": "productFamily", "Value": "Storage", "Type": "TERM_MATCH"}},
 def get_infra(region, tag_name, tag_value):
     client = boto3.client('ec2', region_name=region)
     ec2_resource = boto3.resource('ec2', region_name=region)
-    reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name, 'Values': ["*" + tag_value + "*"]}])
+    try:
+        reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name,
+                                                           'Values': ["*" + tag_value + "*"]}])
+    except ClientError as error:
+        print("Unexpected error: {}".format(error.response['Error']['Message']))
+        print("Error Code: {}".format(error.response['Error']['Code']))
+        exit(error.response['ResponseMetadata']['HTTPStatusCode'])
+
     instances = [i for l in reservations['Reservations'] for i in l['Instances']]
     # instance types of "running" machines
     types = [i['InstanceType'] for i in instances if i['State']['Code'] == 16]
@@ -110,14 +117,13 @@ if __name__ == "__main__":
             monthly_instances_cost += float(get_instance_price(aws_region(region), i)) * 732
         except Exception as error:
             print("Instances price calculation failed with error below :\n %s" % error )
-        sys.exit(1)
-
+            sys.exit(1)
     for type, size in infra[1]:
         try:
             monthly_ebs_cost += int(size * float(get_ebs_price(aws_region(region), type)))
         except Exception as error:
             print("EBS price calculation failed with error below :\n %s" % error )
-        sys.exit(1)
+            sys.exit(1)
 
     print('Monthly costs for EC2 instances: ${0:.2f}'.format(monthly_instances_cost))
     print('Monthly costs for EBS: ${0}'.format(monthly_ebs_cost))
