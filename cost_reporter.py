@@ -5,6 +5,7 @@ import argparse
 import boto3
 import json
 
+from botocore.exceptions import ClientError
 from collections import Counter
 from itertools import groupby
 from operator import itemgetter
@@ -22,9 +23,17 @@ FLT2 = '[{{"Field": "productFamily", "Value": "Storage", "Type": "TERM_MATCH"}},
 
 
 def get_infra(region, tag_name, tag_value):
+
     client = boto3.client('ec2', region_name=region)
     ec2_resource = boto3.resource('ec2', region_name=region)
-    reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name, 'Values': ["*" + tag_value + "*"]}])
+    try:
+        reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name,
+                                                           'Values': ["*" + tag_value + "*"]}])
+    except ClientError as error:
+        print("Unexpected error: {}".format(error.response['Error']['Message']))
+        print("Error Code: {}".format(error.response['Error']['Code']))
+        exit(error.response['ResponseMetadata']['HTTPStatusCode'])
+
     instances = [i for l in reservations['Reservations'] for i in l['Instances']]
     # instance types of "running" machines
     types = [i['InstanceType'] for i in instances if i['State']['Code'] == 16]
@@ -41,7 +50,7 @@ def get_infra(region, tag_name, tag_value):
     first = itemgetter(0)
     ebs_sums = {(k, sum(item[1] for item in tups_to_sum))
                 for k, tups_to_sum in groupby(sorted(ebs_disks, key=first), key=first)}
-    print('SSD disks: ')
+    print('Disks: ')
     for k, v in ebs_sums:
         print('\t{0: <10} {1: >5}GB'.format(k, v))
 
