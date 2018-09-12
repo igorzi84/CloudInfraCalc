@@ -2,10 +2,9 @@ import argparse
 import boto3
 import json
 
+from collections import Counter
 from itertools import groupby
 from operator import itemgetter
-
-from collections import Counter
 
 # Instance filter
 FLT = '[{{"Field": "tenancy", "Value": "shared", "Type": "TERM_MATCH"}},' \
@@ -19,7 +18,7 @@ FLT2 = '[{{"Field": "productFamily", "Value": "Storage", "Type": "TERM_MATCH"}},
        '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}}]'
 
 
-def get_infra(region: object, tag_name: object, tag_value: object) -> object:
+def get_infra(region, tag_name, tag_value):
     client = boto3.client('ec2', region_name=region)
     ec2_resource = boto3.resource('ec2', region_name=region)
     reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name, 'Values': ["*" + tag_value + "*"]}])
@@ -43,7 +42,7 @@ def get_infra(region: object, tag_name: object, tag_value: object) -> object:
     for k, v in ebs_sums:
         print('\t{0: <10} {1: >5}GB'.format(k, v))
 
-    return types,ebs_sums
+    return types, ebs_sums
 
 
 def get_instance_price(region_name, instance):
@@ -56,7 +55,7 @@ def get_instance_price(region_name, instance):
     return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
 
 
-def get_ebs_price(region_name,type):
+def get_ebs_price(region_name, type):
     client = boto3.client('pricing', region_name='us-east-1')
     f2 = FLT2.format(r=region_name, e=aws_ebs_volume_types(type))
     data2 = client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f2))
@@ -65,10 +64,12 @@ def get_ebs_price(region_name,type):
     id2 = list(od[id1]['priceDimensions'])[0]
     return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
 
+
 def aws_ebs_volume_types(type):
-    ebs_voulme_types = {'gp2' : 'General Purpose', 'io1':'Provisioned IOPS', 'st1':'Throughput Optimized', 'sc1':'Cold',
-                        'standard':'Magnetic'}
-    return ebs_voulme_types[type]
+    ebs_volume_types = {'gp2': 'General Purpose', 'io1': 'Provisioned IOPS', 'st1': 'Throughput Optimized',
+                        'sc1': 'Cold',
+                        'standard': 'Magnetic'}
+    return ebs_volume_types[type]
 
 
 def aws_region(region):
@@ -103,7 +104,7 @@ if __name__ == "__main__":
         monthly_instances_cost += float(get_instance_price(aws_region(region), i)) * 732
 
     for type, size in infra[1]:
-        monthly_ebs_cost += int(size * float(get_ebs_price(aws_region(region),type)))
+        monthly_ebs_cost += int(size * float(get_ebs_price(aws_region(region), type)))
 
     print('Monthly costs for EC2 instances: ${0:.2f}'.format(monthly_instances_cost))
     print('Monthly costs for EBS: ${0}'.format(monthly_ebs_cost))
