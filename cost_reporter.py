@@ -115,15 +115,18 @@ if __name__ == "__main__":
     for i in infra[0]:
         try:
             monthly_instances_cost += float(get_instance_price(aws_region(region), i)) * 732
-        except Exception as error:
-            print("Instances price calculation failed with error below :\n %s" % error )
-            sys.exit(1)
+        except ClientError as error:
+            print("Unexpected error: {}".format(error.response['Error']['Message']))
+            print("Error Code: {}".format(error.response['Error']['Code']))
+            exit(error.response['ResponseMetadata']['HTTPStatusCode'])
+
     for type, size in infra[1]:
         try:
             monthly_ebs_cost += int(size * float(get_ebs_price(aws_region(region), type)))
-        except Exception as error:
-            print("EBS price calculation failed with error below :\n %s" % error )
-            sys.exit(1)
+        except ClientError as error:
+            print("Unexpected error: {}".format(error.response['Error']['Message']))
+            print("Error Code: {}".format(error.response['Error']['Code']))
+            exit(error.response['ResponseMetadata']['HTTPStatusCode'])
 
     print('Monthly costs for EC2 instances: ${0:.2f}'.format(monthly_instances_cost))
     print('Monthly costs for EBS: ${0}'.format(monthly_ebs_cost))
