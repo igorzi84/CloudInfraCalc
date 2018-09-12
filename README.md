@@ -4,6 +4,19 @@ Cloud infra costs calculator - goes through instances in AWS account by tag and 
 
 ## Getting Started
 
+### Prerequisites
+
+This script requires boto3 module
+```
+pip install boto3
+```
+AWS credentials should be configured as described:
+```
+https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
+```
+
+### Runnning the script
+
 Run python with -r region, -n tag_name -v tag_value
 Script will fetch all instances in AWS account with tag_name like \*tag_value\* and will calculate instance and EBS costs
 
