@@ -4,7 +4,6 @@
 import argparse
 import boto3
 import json
-import sys
 
 from botocore.exceptions import ClientError
 from collections import Counter
