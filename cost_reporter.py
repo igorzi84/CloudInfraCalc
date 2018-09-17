@@ -23,9 +23,9 @@ FLT2 = '[{{"Field": "productFamily", "Value": "Storage", "Type": "TERM_MATCH"}},
 
 
 def get_infra(region, tag_name, tag_value):
-    client = boto3.client('ec2', region_name=region)
-    ec2_resource = boto3.resource('ec2', region_name=region)
     try:
+        client = boto3.client('ec2', region_name=region)
+        ec2_resource = boto3.resource('ec2', region_name=region)
         reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name,
                                                            'Values': ["*" + tag_value + "*"]}])
     except ClientError as error:
