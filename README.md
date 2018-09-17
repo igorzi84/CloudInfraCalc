@@ -18,6 +18,7 @@ https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 ### Runnning the script
 
 Run python with -r region, -n tag_name -v tag_value
+
 Script will fetch all instances in AWS account with tag_name like \*tag_value\* and will calculate instance and EBS costs
 
 ```
@@ -35,16 +36,3 @@ Total monthly cost: $1890.41
 
 ### Runnning the script in Docker - TBD
 
-Run with Docker
-docker run -it --rm --name my-cost-reporter -v "$PWD":/usr/src/myapp -w /usr/src/myapp python:3.6.6 python cost_reporter.py
-
-```
-worker infra: 
-	9	r4.xlarge
-SSD disks: 
-	gp2         1350GB
-	standard      72GB
-Monthly costs for EC2 instances: $1752.41
-Monthly costs for EBS: $138
-Total monthly cost: $1890.41
-```
