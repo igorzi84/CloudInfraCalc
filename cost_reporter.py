@@ -5,7 +5,7 @@ import argparse
 import boto3
 import json
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, NoCredentialsError
 from collections import Counter
 from itertools import groupby
 from operator import itemgetter
@@ -28,6 +28,10 @@ def get_infra(region, tag_name, tag_value):
         ec2_resource = boto3.resource('ec2', region_name=region)
         reservations = client.describe_instances(Filters=[{'Name': "tag:" + tag_name,
                                                            'Values': ["*" + tag_value + "*"]}])
+    except NoCredentialsError as error:
+        print("Unable to find AWS credentials")
+        print("Consider 'aws configure' ")
+        exit(1)
     except ClientError as error:
         print("Unexpected error: {}".format(error.response['Error']['Message']))
         print("Error Code: {}".format(error.response['Error']['Code']))
