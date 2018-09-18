@@ -17,7 +17,7 @@ https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 
 ### Runnning the script
 
-Run python with -r region, -n tag_name -v tag_value
+Run python with -r/--region region, -n/--tag_name tag_name -v/--tag_value tag_value
 
 Script will fetch all instances in AWS account with tag_name like \*tag_value\* and will calculate instance and EBS costs
 
@@ -26,7 +26,7 @@ python cost_reporter.py -r us-east-1 -n Name -v worker
 
 worker infra: 
 	9	r4.xlarge
-SSD disks: 
+Disks: 
 	gp2         1350GB
 	standard      72GB
 Monthly costs for EC2 instances: $1752.41
