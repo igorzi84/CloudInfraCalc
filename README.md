@@ -37,8 +37,10 @@ Total monthly cost: $1890.41
 ### Runnning the script in Docker
 
 
-1. docker build -t cost_reporter .
-2. docker run -e AWS_ACCESS_KEY_ID=<> -e AWS_SECRET_ACCESS_KEY=<> -it cost_reporter --region us-east-1 --tag_name Name --tag_value 
+1. git clone https://github.com/igorzi84/CloudInfraCalc.git
+2. cd CloudInfraCalc
+2. docker build -t cost_reporter .
+3. docker run -e AWS_ACCESS_KEY_ID=<> -e AWS_SECRET_ACCESS_KEY=<> -it cost_reporter --region us-east-1 --tag_name Name --tag_value 
 worker
 
 ```
