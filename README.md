@@ -6,9 +6,9 @@ Cloud infra costs calculator - goes through instances in AWS account by tag and 
 
 ### Prerequisites
 
-This script requires boto3 module
+This script requires boto3 and botocore modules
 ```
-pip install boto3
+pip install -r requirements.txt
 ```
 AWS credentials should be configured as described:
 ```
