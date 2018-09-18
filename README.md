@@ -34,5 +34,21 @@ Monthly costs for EBS: $138
 Total monthly cost: $1890.41
 ```
 
-### Runnning the script in Docker - TBD
+### Runnning the script in Docker
 
+
+1. docker build -t cost_reporter .
+2. docker run -e AWS_ACCESS_KEY_ID=<> -e AWS_SECRET_ACCESS_KEY=<> -it cost_reporter --region us-east-1 --tag_name Name --tag_value 
+worker
+
+```
+worker infra:
+        5       r4.xlarge
+        2       r4.2xlarge
+Disks:
+        gp2         1350GB
+        standard      56GB
+Monthly costs for EC2 instances: $1752.41
+Monthly costs for EBS: $137
+Total monthly cost: $1889.41
+```
