@@ -53,7 +53,7 @@ def get_infra(region, tag_name, tag_value):
     first = itemgetter(0)
     ebs_sums = {(k, sum(item[1] for item in tups_to_sum))
                 for k, tups_to_sum in groupby(sorted(ebs_disks, key=first), key=first)}
-    print('SSD disks: ')
+    print('Disks: ')
     for k, v in ebs_sums:
         print('\t{0: <10} {1: >5}GB'.format(k, v))
 
